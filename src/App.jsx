@@ -1,14 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { collection, addDoc, onSnapshot } from "firebase/firestore";
-import { useEffect } from "react";
 
 function App() {
   const [texto, setTexto] = useState("");
-const [mensajes, setMensajes] = useState([]);
-  const guardar = async () => {
-    console.log("CLICK DETECTADO");
+  const [mensajes, setMensajes] = useState([]);
 
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "prueba"), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setMensajes(data);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const guardar = async () => {
     try {
       await addDoc(collection(db, "prueba"), {
         texto: texto,
@@ -34,23 +45,14 @@ const [mensajes, setMensajes] = useState([]);
       <br /><br />
 
       <button onClick={guardar}>Guardar</button>
-   <h3>Mensajes:</h3>
 
-{mensajes.map((m) => (
-  <p key={m.id}>{m.texto}</p>
-))}</div>
+      <h3>Mensajes:</h3>
+
+      {mensajes.map((m) => (
+        <p key={m.id}>{m.texto}</p>
+      ))}
+    </div>
   );
 }
-useEffect(() => {
-  const unsubscribe = onSnapshot(collection(db, "prueba"), (snapshot) => {
-    const data = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
 
-    setMensajes(data);
-  });
-
-  return () => unsubscribe();
-}, []);
 export default App;
